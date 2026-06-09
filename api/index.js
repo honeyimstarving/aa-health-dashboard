@@ -10,17 +10,17 @@ const RINGBA_ACCOUNT_ID = process.env.RINGBA_ACCOUNT_ID;
 const RINGBA_API_TOKEN  = process.env.RINGBA_API_TOKEN;
 
 const AA_TARGETS = [
-  '+19543143762', // AA Health Cobra New
-  '+18128182061', // AA Health Cobra OG
-  '+14454450605', // AA Health Cobra PMAX
-  '+18382700281', // AA Health Ruby
+  { number: '+19543143762', campaign: 'Cobra New' },
+  { number: '+18128182061', campaign: 'Cobra OG' },
+  { number: '+14454450605', campaign: 'Cobra PMAX' },
+  { number: '+18382700281', campaign: 'Ruby' },
 ];
 
 app.get('/', (req, res) => res.json({ status: 'AA Health proxy running' }));
 
 app.post('/api/calls', async (req, res) => {
   const { dateFrom, dateTo, targets } = req.body;
-  const targetNumbers = targets && targets.length ? targets : AA_TARGETS;
+  const targetNumbers = AA_TARGETS.map(t => t.number);
 
   const reportStart = `${dateFrom}T00:00:00`;
   const reportEnd   = `${dateTo}T23:59:59`;
@@ -73,17 +73,37 @@ app.post('/api/calls', async (req, res) => {
       offset += size;
     }
 
+    // Build per-campaign stats
+    const campaignMap = {};
+    AA_TARGETS.forEach(t => {
+      campaignMap[t.number] = { campaign: t.campaign, total: 0, connected: 0, durations: [] };
+    });
+
+    allRecords.forEach(r => {
+      const num = r.targetNumber || r.target || '';
+      if (campaignMap[num]) {
+        campaignMap[num].total++;
+        if (r.hasConnected === true) campaignMap[num].connected++;
+        if (r.callLengthInSeconds > 0) campaignMap[num].durations.push(r.callLengthInSeconds);
+      }
+    });
+
+    const campaigns = AA_TARGETS.map(t => {
+      const c = campaignMap[t.number];
+      const avgSec = c.durations.length
+        ? Math.round(c.durations.reduce((a, b) => a + b, 0) / c.durations.length)
+        : 0;
+      return { campaign: c.campaign, totalCalls: c.total, connectedCalls: c.connected, avgDurationSec: avgSec };
+    });
+
     const totalCalls     = allRecords.length;
     const connectedCalls = allRecords.filter(r => r.hasConnected === true).length;
-
-    const durations = allRecords
-      .map(r => r.callLengthInSeconds || 0)
-      .filter(d => d > 0);
+    const durations      = allRecords.map(r => r.callLengthInSeconds || 0).filter(d => d > 0);
     const avgDurationSec = durations.length
       ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
       : 0;
 
-    res.json({ totalCalls, connectedCalls, avgDurationSec });
+    res.json({ totalCalls, connectedCalls, avgDurationSec, campaigns });
   } catch (err) {
     console.error('Ringba error:', err.message);
     res.status(500).json({ error: err.message });
