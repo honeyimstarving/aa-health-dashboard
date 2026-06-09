@@ -83,7 +83,7 @@ app.post('/api/calls', async (req, res) => {
       const num = r.targetNumber || r.target || '';
       if (campaignMap[num]) {
         campaignMap[num].total++;
-        if (r.hasConnected === true) campaignMap[num].connected++;
+        if (r.hasConverted === true) campaignMap[num].connected++;
         if (r.callLengthInSeconds > 0) campaignMap[num].durations.push(r.callLengthInSeconds);
       }
     });
