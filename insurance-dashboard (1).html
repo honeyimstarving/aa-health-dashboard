@@ -23,11 +23,11 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 13px; line-height: 1.5; min-height: 100vh; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 100; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px; }
   .logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text); }
   .logo-mark { width: 30px; height: 30px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000; }
   .logo span { color: var(--muted2); font-weight: 400; }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .timestamp { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
   .live-pill { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--green); background: var(--green-dim); border: 1px solid var(--green-border); border-radius: 20px; padding: 3px 10px; letter-spacing: 1px; }
   .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
@@ -36,6 +36,11 @@
   .btn:hover { background: var(--bg4); }
   .btn.green { color: var(--green); border-color: var(--green-border); background: var(--green-dim); }
   .btn.green:hover { background: #005a25; }
+  .date-input { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--font-mono); font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+  .date-input:focus { outline: none; border-color: #555; }
+  .date-filter-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .filter-btn { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--bg4); color: var(--text); border-color: #555; }
   .container { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
   .date-row { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
   .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; background: var(--bg2); }
@@ -51,13 +56,7 @@
   .section-tag.green { color: var(--green); background: var(--green-dim); border: 1px solid var(--green-border); }
   .section-tag.blue { color: var(--blue); background: var(--blue-dim); border: 1px solid #1565a0; }
   .section-tag.purple { color: var(--purple); background: var(--purple-dim); border: 1px solid #6a1b9a; }
-  .date-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-  .date-filter-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-  .date-input { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--font-mono); font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-  .date-input:focus { outline: none; border-color: #555; }
-  .filter-btn { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
-  .filter-btn:hover, .filter-btn.active { background: var(--bg4); color: var(--text); border-color: #555; }
-  .loading-label { font-family: var(--font-mono); font-size: 10px; color: var(--green); animation: blink 1.2s infinite; }
+  .loading-label { font-family: var(--font-mono); font-size: 10px; color: var(--green); animation: blink 1.2s infinite; margin-left: 6px; }
   .cards-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .cards-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .cards-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -122,6 +121,7 @@
     .cards-4 { grid-template-columns: repeat(2, 1fr); }
     .cards-3 { grid-template-columns: 1fr 1fr; }
     .deals-summary { grid-template-columns: repeat(2, 1fr); }
+    .topbar { flex-direction: column; align-items: flex-start; }
   }
   @media (max-width: 600px) {
     .cards-4, .cards-3, .cards-2 { grid-template-columns: 1fr; }
@@ -138,6 +138,15 @@
   <div class="topbar-right">
     <span class="timestamp" id="clock">--:--:--</span>
     <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+    <!-- GLOBAL DATE CONTROL -->
+    <input type="date" class="date-input" id="global-from">
+    <span class="date-filter-label" style="color:var(--muted2)">–</span>
+    <input type="date" class="date-input" id="global-to">
+    <button class="filter-btn active" id="range-today"    onclick="setGlobalRange('today',this)">Today</button>
+    <button class="filter-btn"         id="range-week"    onclick="setGlobalRange('week',this)">This Week</button>
+    <button class="filter-btn"         id="range-month"   onclick="setGlobalRange('month',this)">This Month</button>
+    <button class="filter-btn"         id="range-all"     onclick="setGlobalRange('all',this)">All</button>
+    <span class="loading-label" id="global-loading" style="display:none">Loading...</span>
     <button class="btn green" onclick="refreshAll()">↻ Refresh</button>
   </div>
 </header>
@@ -145,43 +154,16 @@
   <div class="date-row" id="todayLabel">TODAY — --</div>
   <!-- KPI STRIP -->
   <div class="kpi-strip">
-    <div class="kpi-item">
-      <div class="kpi-label">PTC</div>
-      <div class="kpi-val red" id="kpi-ptc">--</div>
-    </div>
-    <div class="kpi-item">
-      <div class="kpi-label">Ad Spend</div>
-      <div class="kpi-val" id="kpi-spend">--</div>
-    </div>
-    <div class="kpi-item">
-      <div class="kpi-label">Premium</div>
-      <div class="kpi-val purple" id="kpi-premium">--</div>
-    </div>
-    <div class="kpi-item">
-      <div class="kpi-label">CPA</div>
-      <div class="kpi-val" id="kpi-cpa">--</div>
-    </div>
-    <div class="kpi-item">
-      <div class="kpi-label">PPS</div>
-      <div class="kpi-val" id="kpi-pps">--</div>
-    </div>
+    <div class="kpi-item"><div class="kpi-label">PTC</div><div class="kpi-val red" id="kpi-ptc">--</div></div>
+    <div class="kpi-item"><div class="kpi-label">Ad Spend</div><div class="kpi-val" id="kpi-spend">--</div></div>
+    <div class="kpi-item"><div class="kpi-label">Premium</div><div class="kpi-val purple" id="kpi-premium">--</div></div>
+    <div class="kpi-item"><div class="kpi-label">CPA</div><div class="kpi-val" id="kpi-cpa">--</div></div>
+    <div class="kpi-item"><div class="kpi-label">PPS</div><div class="kpi-val" id="kpi-pps">--</div></div>
   </div>
 
   <!-- GOOGLE ADS SECTION -->
   <div class="section">
-    <div class="date-filter">
-      <div class="section-tag green">Google Ads</div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-        <span class="date-filter-label">From</span>
-        <input type="date" class="date-input" id="ads-from">
-        <span class="date-filter-label">To</span>
-        <input type="date" class="date-input" id="ads-to">
-        <button class="filter-btn active" onclick="setRange('ads','today',this)">Today</button>
-        <button class="filter-btn" onclick="setRange('ads','week',this)">This Week</button>
-        <button class="filter-btn" onclick="setRange('ads','month',this)">This Month</button>
-        <span class="loading-label" id="ads-loading" style="display:none">Loading...</span>
-      </div>
-    </div>
+    <div class="section-tag green">Google Ads</div>
     <div class="error-banner" id="ads-error"></div>
     <div class="cards-4" style="margin-bottom:16px;">
       <div class="stat-card green">
@@ -212,12 +194,10 @@
         <span class="ptc-number" id="ptc-number" style="color:var(--red);">--</span>
         <span class="ptc-status" id="ptc-status" style="color:var(--red);">LOADING...</span>
       </div>
-      <div class="bar-track">
-        <div class="bar-fill" id="ptc-bar" style="width:0%;background:var(--muted);"></div>
-      </div>
+      <div class="bar-track"><div class="bar-fill" id="ptc-bar" style="width:0%;background:var(--muted);"></div></div>
       <div class="bar-markers"><span>0</span><span>0.70</span><span>0.80</span><span>1.0</span><span>1.5</span></div>
     </div>
-    <!-- Campaign Cards — 4 campaigns -->
+    <!-- Campaign Cards -->
     <div style="margin-bottom:10px;"><span style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);">Campaign Performance</span></div>
     <div class="cards-4">
       <div class="camp-card" style="border-color:#7a5000;">
@@ -278,19 +258,7 @@
 
   <!-- CALL TRACKING SECTION -->
   <div class="section">
-    <div class="date-filter">
-      <div class="section-tag blue">Call Tracking (Ringba)</div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-        <span class="date-filter-label">From</span>
-        <input type="date" class="date-input" id="calls-from">
-        <span class="date-filter-label">To</span>
-        <input type="date" class="date-input" id="calls-to">
-        <button class="filter-btn active" onclick="setRange('calls','today',this)">Today</button>
-        <button class="filter-btn" onclick="setRange('calls','week',this)">This Week</button>
-        <button class="filter-btn" onclick="setRange('calls','month',this)">This Month</button>
-        <span class="loading-label" id="calls-loading" style="display:none">Loading...</span>
-      </div>
-    </div>
+    <div class="section-tag blue">Call Tracking (Ringba)</div>
     <div class="error-banner" id="calls-error"></div>
     <div class="cards-4">
       <div class="stat-card blue">
@@ -320,20 +288,7 @@
 
   <!-- SALES SECTION -->
   <div class="section">
-    <div class="date-filter">
-      <div class="section-tag purple">Sales</div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-        <span class="date-filter-label">From</span>
-        <input type="date" class="date-input" id="sales-from">
-        <span class="date-filter-label">To</span>
-        <input type="date" class="date-input" id="sales-to">
-        <button class="filter-btn active" onclick="setRange('sales','today',this)">Today</button>
-        <button class="filter-btn" onclick="setRange('sales','week',this)">This Week</button>
-        <button class="filter-btn" onclick="setRange('sales','month',this)">This Month</button>
-        <button class="filter-btn" onclick="setRange('sales','all',this)">All</button>
-        <span class="loading-label" id="sales-loading" style="display:none">Loading...</span>
-      </div>
-    </div>
+    <div class="section-tag purple">Sales</div>
     <div class="error-banner" id="sales-error"></div>
     <div class="cards-2" style="margin-bottom:14px;">
       <div class="stat-card purple">
@@ -358,12 +313,7 @@
     <div class="deals-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Date</th>
-            <th>Source</th>
-            <th>Total Premium</th>
-            <th>Phone #</th>
-          </tr>
+          <tr><th>Date</th><th>Source</th><th>Total Premium</th><th>Phone #</th></tr>
         </thead>
         <tbody id="deals-tbody">
           <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;font-family:var(--font-mono);font-size:11px;">Loading sales data...</td></tr>
@@ -376,17 +326,16 @@
 // ── CREDENTIALS ──────────────────────────────
 const SHEETS_API_KEY = 'AIzaSyB8MYo8smIXiWCidC9U7x2iUB2jwFhk4og';
 const SALES_SHEET_ID = '1nmlYzhDH4vPe5GMhQX7iazxbo7iQ2CRwcVhtYUXzlsU';
-const ADS_SHEET_ID   = 'AA_ADS_SHEET_ID_PLACEHOLDER'; // <-- fill in after creating Ads sheet
+const ADS_SHEET_ID   = 'AA_ADS_SHEET_ID_PLACEHOLDER';
 const SALES_TAB      = 'Form Responses 1';
 const ADS_TAB        = 'Ads Data';
 const PROXY_URL      = 'https://aa-health-dashboard-production.up.railway.app';
 
-// AA Health Ringba target phone numbers
 const AA_TARGETS = [
-  '+19543143762', // AA Health Cobra New
-  '+18128182061', // AA Health Cobra OG
-  '+14454450605', // AA Health Cobra PMAX
-  '+18382700281', // AA Health Ruby
+  '+19543143762',
+  '+18128182061',
+  '+14454450605',
+  '+18382700281',
 ];
 
 // ── DATE UTILS ───────────────────────────────
@@ -394,27 +343,38 @@ const toYMD = d => d.toISOString().slice(0,10);
 const today = () => toYMD(new Date());
 const weekStart = () => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return toYMD(d); };
 const monthStart = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; };
-function setRange(section, range, btn) {
-  const from = document.getElementById(`${section}-from`);
-  const to   = document.getElementById(`${section}-to`);
-  const t = today();
-  if (range==='today')  { from.value=t; to.value=t; }
-  if (range==='week')   { from.value=weekStart(); to.value=t; }
-  if (range==='month')  { from.value=monthStart(); to.value=t; }
-  if (range==='all')    { from.value='2020-01-01'; to.value=t; }
-  btn.closest('.date-filter').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if (section==='ads')   fetchAdsData();
-  if (section==='calls') fetchCallsData();
-  if (section==='sales') fetchSalesData();
+
+function getGlobalDates() {
+  return {
+    from: document.getElementById('global-from').value,
+    to:   document.getElementById('global-to').value,
+  };
 }
+
+function setGlobalRange(range, btn) {
+  const t = today();
+  const fromEl = document.getElementById('global-from');
+  const toEl   = document.getElementById('global-to');
+  if (range==='today') { fromEl.value=t; toEl.value=t; }
+  if (range==='week')  { fromEl.value=weekStart(); toEl.value=t; }
+  if (range==='month') { fromEl.value=monthStart(); toEl.value=t; }
+  if (range==='all')   { fromEl.value='2020-01-01'; toEl.value=t; }
+  document.querySelectorAll('.filter-btn[id^="range-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  refreshAll();
+}
+
 function initDates() {
   const t = today();
-  ['ads','calls','sales'].forEach(s => {
-    document.getElementById(`${s}-from`).value = t;
-    document.getElementById(`${s}-to`).value   = t;
-    document.getElementById(`${s}-from`).addEventListener('change', () => s==='ads'?fetchAdsData():s==='calls'?fetchCallsData():fetchSalesData());
-    document.getElementById(`${s}-to`).addEventListener('change',   () => s==='ads'?fetchAdsData():s==='calls'?fetchCallsData():fetchSalesData());
+  document.getElementById('global-from').value = t;
+  document.getElementById('global-to').value   = t;
+  document.getElementById('global-from').addEventListener('change', () => {
+    document.querySelectorAll('.filter-btn[id^="range-"]').forEach(b=>b.classList.remove('active'));
+    refreshAll();
+  });
+  document.getElementById('global-to').addEventListener('change', () => {
+    document.querySelectorAll('.filter-btn[id^="range-"]').forEach(b=>b.classList.remove('active'));
+    refreshAll();
   });
 }
 
@@ -422,47 +382,32 @@ function initDates() {
 function updateClock() {
   const now = new Date();
   document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
-  document.getElementById('todayLabel').textContent = 'TODAY — ' + now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+  document.getElementById('todayLabel').textContent = 'TODAY — ' + now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase() + ' (ET)';
 }
 
 // ── FORMATTERS ───────────────────────────────
-const fmt$  = n => (n===null||isNaN(n)) ? '$--' : n>=1000 ? '$'+(n/1000).toFixed(1)+'k' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt$     = n => (n===null||isNaN(n)) ? '$--' : n>=1000 ? '$'+(n/1000).toFixed(1)+'k' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtFull$ = n => (n===null||isNaN(n)) ? '$--' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtK  = n => (n===null||isNaN(n)) ? '--' : n>=1000 ? (n/1000).toFixed(1)+'k' : String(n);
-const setEl = (id,val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+const fmtK     = n => (n===null||isNaN(n)) ? '--' : n>=1000 ? (n/1000).toFixed(1)+'k' : String(n);
+const setEl    = (id,val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
 const showLoading = (id,show) => { const e=document.getElementById(id); if(e) e.style.display=show?'inline':'none'; };
 const showError   = (id,show,msg) => { const e=document.getElementById(id); if(!e) return; e.style.display=show?'block':'none'; if(msg) e.textContent='⚠ '+msg; };
 
-// ── GOOGLE ADS (from Sheets) ─────────────────
+// ── GOOGLE ADS ───────────────────────────────
 async function fetchAdsData() {
-  showLoading('ads-loading', true);
   showError('ads-error', false);
-  const from = document.getElementById('ads-from').value;
-  const to   = document.getElementById('ads-to').value;
+  const { from, to } = getGlobalDates();
   try {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${ADS_SHEET_ID}/values/${encodeURIComponent(ADS_TAB)}?key=${SHEETS_API_KEY}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Sheets API ${res.status}`);
     const data = await res.json();
     const rows = (data.values || []).slice(1);
-    const filtered = rows.filter(r => {
-      if (!r[0]) return false;
-      const d = r[0].slice(0,10);
-      return d >= from && d <= to;
-    });
-    // Latest snapshot per campaign (last row wins)
+    const filtered = rows.filter(r => { if (!r[0]) return false; const d=r[0].slice(0,10); return d>=from&&d<=to; });
     const campMap = {};
     filtered.forEach(r => {
       const name = r[1] || 'Unknown';
-      campMap[name] = {
-        name,
-        status: r[2] || 'ENABLED',
-        spend:  parseFloat(r[3]) || 0,
-        clicks: parseInt(r[4])   || 0,
-        impr:   parseInt(r[5])   || 0,
-        conv:   parseFloat(r[6]) || 0,
-        ctr:    r[7] || '0%',
-      };
+      campMap[name] = { name, status: r[2]||'ENABLED', spend: parseFloat(r[3])||0, clicks: parseInt(r[4])||0, impr: parseInt(r[5])||0, conv: parseFloat(r[6])||0, ctr: r[7]||'0%' };
     });
     const camps = Object.values(campMap);
     const totalSpend = camps.reduce((s,c)=>s+c.spend,0);
@@ -477,48 +422,28 @@ async function fetchAdsData() {
     setEl('ads-ctr-sub', totalImpr>0   ? `CTR: ${(totalClicks/totalImpr*100).toFixed(2)}%` : 'CTR: --%');
     setEl('ads-costconv-sub', totalConv>0 ? `Cost/conv: ${fmtFull$(totalSpend/totalConv)}` : 'Cost/conv: $--');
     setEl('kpi-spend', fmt$(totalSpend));
-
-    // Campaign cards — match by name keywords
-    const cn   = camps.filter(c=>c.name.toUpperCase().includes('COBRA NEW') || c.name.toUpperCase().includes('COBRA_NEW'));
-    const co   = camps.filter(c=>(c.name.toUpperCase().includes('COBRA OG') || c.name.toUpperCase().includes('COBRA_OG')) && !c.name.toUpperCase().includes('PMAX'));
-    const cp   = camps.filter(c=>c.name.toUpperCase().includes('PMAX'));
-    const rb   = camps.filter(c=>c.name.toUpperCase().includes('RUBY'));
+    const cn = camps.filter(c=>c.name.toUpperCase().includes('COBRA NEW')||c.name.toUpperCase().includes('COBRA_NEW'));
+    const co = camps.filter(c=>(c.name.toUpperCase().includes('COBRA OG')||c.name.toUpperCase().includes('COBRA_OG'))&&!c.name.toUpperCase().includes('PMAX'));
+    const cp = camps.filter(c=>c.name.toUpperCase().includes('PMAX'));
+    const rb = camps.filter(c=>c.name.toUpperCase().includes('RUBY'));
     const sumCamp = (arr,key) => arr.reduce((s,c)=>s+c[key],0);
-    [['cn',cn],['co',co],['cp',cp],['rb',rb]].forEach(([k,arr])=>{
-      const sp = sumCamp(arr,'spend');
-      setEl(`camp-${k}-spend`, fmtFull$(sp));
-    });
-
-    // Campaign status list
+    [['cn',cn],['co',co],['cp',cp],['rb',rb]].forEach(([k,arr])=>{ setEl(`camp-${k}-spend`, fmtFull$(sumCamp(arr,'spend'))); });
     const list = document.getElementById('campaign-status-list');
     if (camps.length > 0) {
-      list.innerHTML = camps.map(c=>`
-        <div class="campaign-status-row">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="status-dot ${c.status==='ENABLED'?'active':'paused'}"></div>
-            <span>${c.name}</span>
-          </div>
-          <span style="color:var(--muted);font-family:var(--font-mono)">${fmtFull$(c.spend)} spend · ${fmtK(c.clicks)} clicks</span>
-          <span style="color:${c.status==='ENABLED'?'var(--green)':'var(--muted)'};font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">${c.status}</span>
-        </div>
-      `).join('');
+      list.innerHTML = camps.map(c=>`<div class="campaign-status-row"><div style="display:flex;align-items:center;gap:10px;"><div class="status-dot ${c.status==='ENABLED'?'active':'paused'}"></div><span>${c.name}</span></div><span style="color:var(--muted);font-family:var(--font-mono)">${fmtFull$(c.spend)} spend · ${fmtK(c.clicks)} clicks</span><span style="color:${c.status==='ENABLED'?'var(--green)':'var(--muted)'};font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">${c.status}</span></div>`).join('');
     } else {
       list.innerHTML = `<div class="campaign-status-row"><span style="color:var(--muted)">No data for this date range — script runs hourly</span></div>`;
     }
     updateKpis();
   } catch(err) {
     showError('ads-error', true, `Google Ads Sheet error: ${err.message}`);
-  } finally {
-    showLoading('ads-loading', false);
   }
 }
 
-// ── RINGBA (via Railway proxy) ───────────────
+// ── RINGBA ───────────────────────────────────
 async function fetchCallsData() {
-  showLoading('calls-loading', true);
   showError('calls-error', false);
-  const from = document.getElementById('calls-from').value;
-  const to   = document.getElementById('calls-to').value;
+  const { from, to } = getGlobalDates();
   try {
     const res = await fetch(`${PROXY_URL}/api/calls`, {
       method: 'POST',
@@ -534,89 +459,57 @@ async function fetchCallsData() {
     setEl('calls-connected', connected !== null ? String(connected) : '--');
     const rate = (total && connected) ? (connected/total*100).toFixed(1) : null;
     setEl('calls-connect-rate', rate ? `${rate}% connect rate` : '--% connect rate');
-    if (avgSec !== null) {
-      const m = Math.floor(avgSec/60);
-      const s = String(avgSec%60).padStart(2,'0');
-      setEl('calls-duration', `${m}:${s}`);
-    }
+    if (avgSec !== null) { const m=Math.floor(avgSec/60); const s=String(avgSec%60).padStart(2,'0'); setEl('calls-duration', `${m}:${s}`); }
     const spendText = document.getElementById('ads-spend')?.textContent || '';
-    const spend = parseFloat(spendText.replace(/[$,k]/g,'')) * (spendText.includes('k') ? 1000 : 1);
+    const spend = parseFloat(spendText.replace(/[$,k]/g,'')) * (spendText.includes('k')?1000:1);
     if (!isNaN(spend) && total > 0) setEl('calls-cost-per', fmtFull$(spend/total));
   } catch(err) {
     showError('calls-error', true, `Ringba error: ${err.message}`);
-  } finally {
-    showLoading('calls-loading', false);
   }
 }
 
-// ── SALES (Google Sheets — Form Responses 1 + JN Insurance Sales) ─
+// ── SALES ────────────────────────────────────
+const parseDate = (str) => {
+  if (!str) return '';
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.slice(0,10);
+  return '';
+};
+
 async function fetchSalesData() {
-  showLoading('sales-loading', true);
   showError('sales-error', false);
-  const from = document.getElementById('sales-from').value;
-  const to   = document.getElementById('sales-to').value;
-
-  // Parse date from various formats
-  const parseDate = (str) => {
-    if (!str) return '';
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
-    if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.slice(0,10);
-    return '';
-  };
-
+  const { from, to } = getGlobalDates();
   try {
-    // ── TAB 1: Form Responses 1 ──────────────────
-    // Col A(0)=Timestamp, Col O(14)=Monthly Rate (CORE + AD&D), source from form fields
     const url1 = `https://sheets.googleapis.com/v4/spreadsheets/${SALES_SHEET_ID}/values/${encodeURIComponent('Form Responses 1')}?key=${SHEETS_API_KEY}`;
     const res1 = await fetch(url1);
-    if (!res1.ok) { const e = await res1.json().catch(()=>{}); throw new Error(e?.error?.message || `HTTP ${res1.status}`); }
+    if (!res1.ok) { const e=await res1.json().catch(()=>{}); throw new Error(e?.error?.message||`HTTP ${res1.status}`); }
     const data1 = await res1.json();
-    const rows1 = (data1.values || []).slice(1); // skip header row
+    const rows1 = (data1.values||[]).slice(1);
+    const deals1 = rows1.map(r=>({ date: parseDate(r[0]||''), dateRaw: r[0]||'', source: (r[4]||'').toUpperCase(), premium: parseFloat((r[14]||'0').replace(/[$,]/g,''))||0, phone: r[12]||'', office: 'Main' })).filter(d=>d.date);
 
-    const deals1 = rows1.map(r => ({
-      date:    parseDate(r[0] || ''),
-      dateRaw: r[0] || '',
-      source:  (r[4] || '').toUpperCase(), // Col E = source/campaign
-      premium: parseFloat((r[14] || '0').replace(/[$,]/g,'')) || 0, // Col O = Monthly Rate
-      phone:   r[12] || '', // Col M = phone
-      office:  'Main',
-    })).filter(d => d.date);
-
-    // ── TAB 2: JN Insurance Sales ────────────────
-    // Col A(0)=Date, Col L(11)=Month premium
     const url2 = `https://sheets.googleapis.com/v4/spreadsheets/${SALES_SHEET_ID}/values/${encodeURIComponent('JN Insurance Sales')}?key=${SHEETS_API_KEY}`;
     const res2 = await fetch(url2);
     let deals2 = [];
     if (res2.ok) {
       const data2 = await res2.json();
-      const rows2 = (data2.values || []).slice(1); // skip header row
-      deals2 = rows2.map(r => ({
-        date:    parseDate(r[0] || ''),
-        dateRaw: r[0] || '',
-        source:  (r[4] || 'JN OFFICE').toUpperCase(), // Col E or default label
-        premium: parseFloat((r[11] || '0').replace(/[$,]/g,'')) || 0, // Col L = Month
-        phone:   r[7] || '', // Col H = phone (adjust if needed)
-        office:  'JN',
-      })).filter(d => d.date);
+      const rows2 = (data2.values||[]).slice(1);
+      deals2 = rows2.map(r=>({ date: parseDate(r[0]||''), dateRaw: r[0]||'', source: (r[10]||'JN OFFICE').toUpperCase(), premium: parseFloat((r[11]||'0').replace(/[$,]/g,''))||0, phone: r[7]||'', office: 'JN' })).filter(d=>d.date);
     }
 
     const allDeals = [...deals1, ...deals2];
-    const filtered      = allDeals.filter(d => d.date >= from && d.date <= to);
-    const monthFiltered = allDeals.filter(d => d.date >= monthStart());
+    const filtered      = allDeals.filter(d=>d.date>=from&&d.date<=to);
+    const monthFiltered = allDeals.filter(d=>d.date>=monthStart());
     renderSalesData(filtered, monthFiltered.length);
   } catch(err) {
     showError('sales-error', true, `Sheets error: ${err.message}`);
-    console.error(err);
-  } finally {
-    showLoading('sales-loading', false);
   }
 }
 
 function renderSalesData(deals, monthCount) {
   const total   = deals.length;
   const revenue = deals.reduce((s,d)=>s+d.premium,0);
-  const avg     = total > 0 ? revenue/total : 0;
+  const avg     = total>0 ? revenue/total : 0;
   setEl('sales-deals',     String(total));
   setEl('sales-deals-sub', `${total} deals`);
   setEl('sales-revenue',   fmtFull$(revenue));
@@ -624,46 +517,31 @@ function renderSalesData(deals, monthCount) {
   setEl('sum-total',       String(total));
   setEl('sum-premium',     fmtFull$(revenue));
   setEl('sum-avg-premium', fmtFull$(avg));
-
   const cobra = deals.filter(d=>d.source.includes('COBRA')).length;
   const ruby  = deals.filter(d=>d.source.includes('RUBY')).length;
   setEl('sum-campaign-split', `${cobra} / ${ruby}`);
-
-  // Campaign card sales + premiums (assign by source keyword)
   const cnSales = deals.filter(d=>d.source.includes('COBRA NEW')||d.source.includes('COBRA_NEW'));
   const coSales = deals.filter(d=>(d.source.includes('COBRA OG')||d.source.includes('COBRA_OG'))&&!d.source.includes('PMAX'));
   const cpSales = deals.filter(d=>d.source.includes('PMAX'));
   const rbSales = deals.filter(d=>d.source.includes('RUBY'));
-
   [['cn',cnSales],['co',coSales],['cp',cpSales],['rb',rbSales]].forEach(([k,arr])=>{
-    const cnt  = arr.length;
-    const prem = arr.reduce((s,d)=>s+d.premium,0);
-    setEl(`camp-${k}-sales`,   String(cnt));
-    setEl(`camp-${k}-premium`, fmtFull$(prem));
+    setEl(`camp-${k}-sales`,   String(arr.length));
+    setEl(`camp-${k}-premium`, fmtFull$(arr.reduce((s,d)=>s+d.premium,0)));
   });
-
-  // Table
   const tbody = document.getElementById('deals-tbody');
   if (deals.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;font-family:var(--font-mono);font-size:11px;">No deals found for this date range</td></tr>`;
-    setEl('kpi-premium', '--');
-    updateKpis();
-    return;
+    setEl('kpi-premium','--'); updateKpis(); return;
   }
   const sorted = [...deals].sort((a,b)=>b.date.localeCompare(a.date));
   tbody.innerHTML = sorted.map(d => {
     const src = d.source.toLowerCase();
-    let badgeClass = 'other';
-    if (src.includes('cobra new') || src.includes('cobra_new')) badgeClass = 'cobra-new';
-    else if (src.includes('pmax'))                              badgeClass = 'cobra-pmax';
-    else if (src.includes('cobra og') || src.includes('cobra_og') || src.includes('cobra')) badgeClass = 'cobra-og';
-    else if (src.includes('ruby'))                             badgeClass = 'ruby';
-    return `<tr>
-      <td class="muted-val">${d.dateRaw || d.date}</td>
-      <td><span class="badge ${badgeClass}">${d.source||'--'}</span></td>
-      <td class="premium-val">${fmtFull$(d.premium)}</td>
-      <td class="muted-val">${d.phone}</td>
-    </tr>`;
+    let bc = 'other';
+    if (src.includes('cobra new')||src.includes('cobra_new')) bc='cobra-new';
+    else if (src.includes('pmax')) bc='cobra-pmax';
+    else if (src.includes('cobra og')||src.includes('cobra_og')||src.includes('cobra')) bc='cobra-og';
+    else if (src.includes('ruby')) bc='ruby';
+    return `<tr><td class="muted-val">${d.dateRaw||d.date}</td><td><span class="badge ${bc}">${d.source||'--'}</span></td><td class="premium-val">${fmtFull$(d.premium)}</td><td class="muted-val">${d.phone}</td></tr>`;
   }).join('');
   setEl('kpi-premium', fmt$(revenue));
   updateKpis();
@@ -674,44 +552,44 @@ function updateKpis() {
   const spendEl   = document.getElementById('ads-spend');
   const premiumEl = document.getElementById('sales-revenue');
   const salesEl   = document.getElementById('sales-deals');
-  const spendTxt = spendEl?.textContent || '';
-  const spend   = parseFloat(spendTxt.replace(/[$,k]/g,'')) * (spendTxt.includes('k')?1000:1) || null;
-  const premium = parseFloat((premiumEl?.textContent||'').replace(/[$,]/g,'')) || null;
-  const sales   = parseInt(salesEl?.textContent) || null;
+  const spendTxt = spendEl?.textContent||'';
+  const spend   = parseFloat(spendTxt.replace(/[$,k]/g,''))*(spendTxt.includes('k')?1000:1)||null;
+  const premium = parseFloat((premiumEl?.textContent||'').replace(/[$,]/g,''))||null;
+  const sales   = parseInt(salesEl?.textContent)||null;
   if (spend && premium) {
-    const ptc = premium / spend;
+    const ptc = premium/spend;
     setEl('kpi-ptc', ptc.toFixed(2));
     setEl('ptc-number', ptc.toFixed(2));
     let color, status;
-    if (ptc >= 1.0)      { color='var(--green)'; status='COOKING 🔥'; }
-    else if (ptc >= 0.8) { color='var(--yellow)'; status='ON TARGET'; }
-    else if (ptc >= 0.7) { color='var(--yellow)'; status='AT MIN TARGET'; }
-    else                 { color='var(--red)'; status='BELOW TARGET'; }
+    if (ptc>=1.0)      { color='var(--green)';  status='COOKING 🔥'; }
+    else if (ptc>=0.8) { color='var(--yellow)'; status='ON TARGET'; }
+    else if (ptc>=0.7) { color='var(--yellow)'; status='AT MIN TARGET'; }
+    else               { color='var(--red)';    status='BELOW TARGET'; }
     document.getElementById('ptc-number').style.color = color;
     document.getElementById('ptc-status').style.color = color;
     document.getElementById('kpi-ptc').style.color = color;
     setEl('ptc-status', status);
-    const pct = Math.min((ptc/1.5)*100, 100);
+    const pct = Math.min((ptc/1.5)*100,100);
     document.getElementById('ptc-bar').style.width = pct+'%';
     document.getElementById('ptc-bar').style.background = color;
   }
   if (spend && sales) setEl('kpi-cpa', fmtFull$(spend/sales));
   if (premium && sales) setEl('kpi-pps', fmtFull$(premium/sales));
-
-  // Campaign CPA / PPS / PTC
   ['cn','co','cp','rb'].forEach(k => {
     const s  = parseInt(document.getElementById(`camp-${k}-sales`)?.textContent)||0;
     const sp = parseFloat((document.getElementById(`camp-${k}-spend`)?.textContent||'').replace(/[$,]/g,''))||0;
     const pr = parseFloat((document.getElementById(`camp-${k}-premium`)?.textContent||'').replace(/[$,]/g,''))||0;
-    if (s>0 && sp>0) setEl(`camp-${k}-cpa`, fmtFull$(sp/s));
-    if (s>0 && pr>0) setEl(`camp-${k}-pps`, fmtFull$(pr/s));
-    if (sp>0 && pr>0) setEl(`camp-${k}-ptc`, (pr/sp).toFixed(2));
+    if (s>0&&sp>0) setEl(`camp-${k}-cpa`, fmtFull$(sp/s));
+    if (s>0&&pr>0) setEl(`camp-${k}-pps`, fmtFull$(pr/s));
+    if (sp>0&&pr>0) setEl(`camp-${k}-ptc`, (pr/sp).toFixed(2));
   });
 }
 
 // ── REFRESH ALL ──────────────────────────────
 async function refreshAll() {
+  showLoading('global-loading', true);
   await Promise.all([fetchAdsData(), fetchCallsData(), fetchSalesData()]);
+  showLoading('global-loading', false);
 }
 
 // ── INIT ─────────────────────────────────────
