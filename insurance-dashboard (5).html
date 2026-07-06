@@ -438,7 +438,7 @@ async function fetchAdsData() {
     const camps = Object.values(campMap);
     const cobraCamps = camps.filter(c=>!c.name.toUpperCase().includes('RUBY'));
     const cobraSpend = cobraCamps.reduce((s,c)=>s+c.spend,0);
-    const rubySpend  = (window.rubyCallCount||0) * 40; // ← change 40 to adjust Ruby rate
+    const rubySpend  = (window.rubyCallCount||0) * 30; // ← change 40 to adjust Ruby rate
     const totalSpend = cobraSpend + rubySpend;
     const totalClicks = cobraCamps.reduce((s,c)=>s+c.clicks,0);
     const totalImpr  = cobraCamps.reduce((s,c)=>s+c.impr,0);
