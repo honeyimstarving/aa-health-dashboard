@@ -13,7 +13,7 @@ const AA_TARGETS = [
   { number: '+19543143762', campaign: 'Cobra New' },
   { number: '+18128182061', campaign: 'Cobra OG' },
   { number: '+14454450605', campaign: 'Cobra PMAX' },
-  { number: '+18382700281', campaign: 'Ruby' },
+  { number: '+18382700281', campaign: 'Ruby', costPerCall: 40 },
 ];
 
 app.get('/', (req, res) => res.json({ status: 'AA Health proxy running' }));
@@ -93,7 +93,14 @@ app.post('/api/calls', async (req, res) => {
       const avgSec = c.durations.length
         ? Math.round(c.durations.reduce((a, b) => a + b, 0) / c.durations.length)
         : 0;
-      return { campaign: c.campaign, totalCalls: c.total, connectedCalls: c.connected, avgDurationSec: avgSec };
+      const result = { campaign: c.campaign, totalCalls: c.total, connectedCalls: c.connected, avgDurationSec: avgSec };
+      // Flat-rate campaigns (e.g. Ruby: $40 per call) have no Google Ads spend —
+      // cost is derived from call volume instead.
+      if (t.costPerCall) {
+        result.spend = +(c.total * t.costPerCall).toFixed(2);
+        result.costPerCall = t.costPerCall;
+      }
+      return result;
     });
 
     const totalCalls     = allRecords.length;
