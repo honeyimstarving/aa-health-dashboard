@@ -20,7 +20,10 @@ app.get('/', (req, res) => res.json({ status: 'AA Health proxy running' }));
 
 app.post('/api/calls', async (req, res) => {
   const { dateFrom, dateTo, targets } = req.body;
-  const targetNumbers = AA_TARGETS.map(t => t.number);
+  const targetNumbers =
+    Array.isArray(targets) && targets.length
+        ? targets
+        : AA_TARGETS.map(t => t.number);
 
   const reportStart = `${dateFrom}T00:00:00`;
   const reportEnd   = `${dateTo}T23:59:59`;
