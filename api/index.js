@@ -14,6 +14,7 @@ const AA_TARGETS = [
   { number: '+18128182061', campaign: 'Cobra OG' },
   { number: '+14454450605', campaign: 'Cobra PMAX' },
   { number: '+18382700281', campaign: 'Ruby' },
+  { number: '+15107375446', campaign: 'Sapphire' },
 ];
 
 app.get('/', (req, res) => res.json({ status: 'AA Health proxy running' }));
