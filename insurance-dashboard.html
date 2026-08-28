@@ -673,7 +673,7 @@ function toggleFee() {
     knob.style.left = '18px';
     label.style.color = 'var(--green)';
     label.textContent = 'ON';
-    if (sub) sub.textContent = 'With Mgmt Fee (+15%)';
+    if (sub) sub.textContent = 'With Mgmt Fee (+10%)';
   } else {
     toggle.style.background = 'var(--muted)';
     knob.style.left = '2px';
@@ -685,7 +685,7 @@ function toggleFee() {
 }
 
 function applyFeeToDisplay() {
-  const multiplier = feeOn ? 1.15 : 1.0;
+  const multiplier = feeOn ? 1.10 : 1.0;
   const adjSpend = rawAdsSpend * multiplier;
   setEl('ads-spend', fmtFull$(adjSpend));
   setEl('kpi-spend', fmt$(adjSpend));
