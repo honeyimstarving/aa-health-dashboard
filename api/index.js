@@ -85,34 +85,31 @@ app.post('/api/calls', async (req, res) => {
       campaignMap[t.number] = { campaign: t.campaign, total: 0, connected: 0, durations: [] };
     });
 
-    // Any target number that came in from the frontend but isn't mapped above
-    // still gets grouped, under its raw number, instead of silently vanishing
-    // from the per-campaign table while counting toward the total.
-    const unmapped = {};
+    // Only calls to mapped targets count. Anything else (other accounts' targets
+    // bleeding through the filter, records with no target number) is dropped from
+    // both the per-campaign rows and the totals, so the table always sums to the
+    // top-line figure. To surface a number here instead of dropping it, add it to
+    // AA_TARGETS above.
+    const mappedRecords = allRecords.filter(r => campaignMap[r.targetNumber || r.target || '']);
 
-    allRecords.forEach(r => {
-      const num = r.targetNumber || r.target || '';
-      const bucket = campaignMap[num] || (unmapped[num] = unmapped[num] || { campaign: num || 'Unmapped', total: 0, connected: 0, durations: [] });
+    mappedRecords.forEach(r => {
+      const bucket = campaignMap[r.targetNumber || r.target || ''];
       bucket.total++;
       if (r.hasConverted === true) bucket.connected++;
       if (r.callLengthInSeconds > 0) bucket.durations.push(r.callLengthInSeconds);
     });
 
-    const toRow = (c) => {
+    const campaigns = AA_TARGETS.map(t => {
+      const c = campaignMap[t.number];
       const avgSec = c.durations.length
         ? Math.round(c.durations.reduce((a, b) => a + b, 0) / c.durations.length)
         : 0;
       return { campaign: c.campaign, totalCalls: c.total, connectedCalls: c.connected, avgDurationSec: avgSec };
-    };
+    });
 
-    const campaigns = [
-      ...AA_TARGETS.map(t => toRow(campaignMap[t.number])),
-      ...Object.values(unmapped).map(toRow),
-    ];
-
-    const totalCalls     = allRecords.length;
-    const connectedCalls = allRecords.filter(r => r.hasConnected === true).length;
-    const durations      = allRecords.map(r => r.callLengthInSeconds || 0).filter(d => d > 0);
+    const totalCalls     = mappedRecords.length;
+    const connectedCalls = mappedRecords.filter(r => r.hasConnected === true).length;
+    const durations      = mappedRecords.map(r => r.callLengthInSeconds || 0).filter(d => d > 0);
     const avgDurationSec = durations.length
       ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
       : 0;
