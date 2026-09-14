@@ -9,12 +9,14 @@ app.use(express.json());
 const RINGBA_ACCOUNT_ID = process.env.RINGBA_ACCOUNT_ID;
 const RINGBA_API_TOKEN  = process.env.RINGBA_API_TOKEN;
 
+// Number → campaign label. These labels must match the dashboard's card labels
+// (the frontend normalizes minor variations, but keep them exact where possible).
 const AA_TARGETS = [
   { number: '+19543143762', campaign: 'Cobra New' },
   { number: '+18128182061', campaign: 'Cobra OG' },
   { number: '+14454450605', campaign: 'Cobra PMAX' },
   { number: '+18382700281', campaign: 'Ruby' },
-  { number: '+15107375446', campaign: 'Sapphire' },
+  { number: '+12186717636', campaign: 'Carrier' },
 ];
 
 app.get('/', (req, res) => res.json({ status: 'AA Health proxy running' }));
@@ -83,22 +85,30 @@ app.post('/api/calls', async (req, res) => {
       campaignMap[t.number] = { campaign: t.campaign, total: 0, connected: 0, durations: [] };
     });
 
+    // Any target number that came in from the frontend but isn't mapped above
+    // still gets grouped, under its raw number, instead of silently vanishing
+    // from the per-campaign table while counting toward the total.
+    const unmapped = {};
+
     allRecords.forEach(r => {
       const num = r.targetNumber || r.target || '';
-      if (campaignMap[num]) {
-        campaignMap[num].total++;
-        if (r.hasConverted === true) campaignMap[num].connected++;
-        if (r.callLengthInSeconds > 0) campaignMap[num].durations.push(r.callLengthInSeconds);
-      }
+      const bucket = campaignMap[num] || (unmapped[num] = unmapped[num] || { campaign: num || 'Unmapped', total: 0, connected: 0, durations: [] });
+      bucket.total++;
+      if (r.hasConverted === true) bucket.connected++;
+      if (r.callLengthInSeconds > 0) bucket.durations.push(r.callLengthInSeconds);
     });
 
-    const campaigns = AA_TARGETS.map(t => {
-      const c = campaignMap[t.number];
+    const toRow = (c) => {
       const avgSec = c.durations.length
         ? Math.round(c.durations.reduce((a, b) => a + b, 0) / c.durations.length)
         : 0;
       return { campaign: c.campaign, totalCalls: c.total, connectedCalls: c.connected, avgDurationSec: avgSec };
-    });
+    };
+
+    const campaigns = [
+      ...AA_TARGETS.map(t => toRow(campaignMap[t.number])),
+      ...Object.values(unmapped).map(toRow),
+    ];
 
     const totalCalls     = allRecords.length;
     const connectedCalls = allRecords.filter(r => r.hasConnected === true).length;
