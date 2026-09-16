@@ -456,11 +456,9 @@ async function fetchAdsData() {
       campMap[name].status  = r[2]||'ENABLED';
     });
     const camps = Object.values(campMap);
-    // Every campaign except Ruby spends real Google Ads money (Cobra New/OG/PMAX + Carrier).
-    const adsCamps  = camps.filter(c=>!c.name.toUpperCase().includes('RUBY'));
-    const adsSpend  = adsCamps.reduce((s,c)=>s+c.spend,0);
-    const rubySpend  = (window.rubyCallCount||0) * 30; // ← change 30 to adjust Ruby rate
-    const totalSpend = adsSpend + rubySpend;
+    // All campaigns (Cobra New/OG/PMAX, Ruby, Carrier) use actual Google Ads spend.
+    const adsCamps  = camps;
+    const totalSpend = adsCamps.reduce((s,c)=>s+c.spend,0);
     const totalClicks = adsCamps.reduce((s,c)=>s+c.clicks,0);
     const totalImpr  = adsCamps.reduce((s,c)=>s+c.impr,0);
     const totalConv  = adsCamps.reduce((s,c)=>s+c.conv,0);
@@ -479,13 +477,11 @@ async function fetchAdsData() {
     const rb = camps.filter(c=>c.name.toUpperCase().includes('RUBY'));
     const ca = camps.filter(c=>c.name.toUpperCase().includes('CARRIER'));
     const sumCamp = (arr,key) => arr.reduce((s,c)=>s+c[key],0);
-    [['cn',cn],['co',co],['cp',cp],['ca',ca]].forEach(([k,arr])=>{
+    [['cn',cn],['co',co],['cp',cp],['rb',rb],['ca',ca]].forEach(([k,arr])=>{
       const s = sumCamp(arr,'spend');
       window[`rawCampSpend_${k}`] = s;
       setEl(`camp-${k}-spend`, fmtFull$(s));
     });
-    window.rawCampSpend_rb = rubySpend;
-    setEl('camp-rb-spend', fmtFull$(rubySpend));
     const list = document.getElementById('campaign-status-list');
     if (camps.length > 0) {
       list.innerHTML = camps.map(c=>`<div class="campaign-status-row"><div style="display:flex;align-items:center;gap:10px;"><div class="status-dot ${c.status==='ENABLED'?'active':'paused'}"></div><span>${c.name}</span></div><span style="color:var(--muted);font-family:var(--font-mono)">${fmtFull$(c.spend)} spend · ${fmtK(c.clicks)} clicks</span><span style="color:${c.status==='ENABLED'?'var(--green)':'var(--muted)'};font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">${c.status}</span></div>`).join('');
@@ -536,11 +532,6 @@ async function fetchCallsData() {
     const spendText = document.getElementById('ads-spend')?.textContent || '';
     const spend = parseFloat(spendText.replace(/[$,k]/g,'')) * (spendText.includes('k')?1000:1);
     if (!isNaN(spend) && total > 0) setEl('calls-cost-per', fmtFull$(spend/total));
-    // Store ruby call count for spend calc
-    if (data.campaigns) {
-      const rubyCamp = data.campaigns.find(c=>normCamp(c.campaign)==='Ruby');
-      window.rubyCallCount = rubyCamp ? (rubyCamp.totalCalls||0) : 0;
-    }
     // Per-campaign table
     const rowsEl = document.getElementById('calls-campaign-rows');
     if (data.campaigns && data.campaigns.length > 0) {
