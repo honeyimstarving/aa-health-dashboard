@@ -6,7 +6,7 @@
 // "first time caller". Does not touch the existing Ringba routes
 // or the original CTM credentials.
 //
-// Mount in server.js:
+// Mount in api/index.js:
 //   const revrise = require('./revrise');
 //   app.use(revrise);
 //
@@ -86,11 +86,14 @@ function extractTrackingNumber(call) {
   return null;
 }
 
-// Day bucket in Eastern time, regardless of how CTM stamps the call.
-function easternDay(iso) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d)) return null;
+// Day bucket in Eastern time. CTM's called_at is a non-ISO string
+// ("2026-09-19 08:19 PM -04:00") that parses correctly on current Node but
+// isn't guaranteed to, so prefer unix_time when the record carries it.
+function easternDay(call) {
+  const d = call.unix_time
+    ? new Date(call.unix_time * 1000)
+    : new Date(call.called_at || call.start_time || call.created_at || '');
+  if (!d || isNaN(d)) return null;
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(d);
@@ -148,7 +151,7 @@ router.post('/api/revrise', async (req, res) => {
       const num = extractTrackingNumber(call);
       if (!num) continue; // not a RevRise number — ignore
 
-      const day = easternDay(call.called_at || call.start_time || call.created_at);
+      const day = easternDay(call);
       if (day && (day < dateFrom || day > dateTo)) continue; // ET boundary correction
 
       const tags = extractTags(call);
