@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
+const revrise = require('./revrise');
 
 const app = express();
 app.use(cors());
@@ -120,6 +121,7 @@ app.post('/api/calls', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.use(revrise);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`AA Health proxy on port ${PORT}`));
