@@ -151,6 +151,12 @@ router.post('/api/revrise', async (req, res) => {
       const num = extractTrackingNumber(call);
       if (!num) continue; // not a RevRise number — ignore
 
+      // CTM's new/repeat auto-tag only fires on inbound calls. Outbound dials
+      // and agent callbacks on the same tracking number arrive with no tag at
+      // all, which would otherwise show up as unbilled "untagged" calls.
+      const dir = String(call.direction || 'inbound').toLowerCase();
+      if (dir !== 'inbound') continue;
+
       const day = easternDay(call);
       if (day && (day < dateFrom || day > dateTo)) continue; // ET boundary correction
 
@@ -211,10 +217,25 @@ router.post('/api/revrise/debug', async (req, res) => {
   try {
     const all = await fetchAllCalls(dateFrom, dateTo);
     const sample = all[0] || null;
+    const mine = all.filter(c => extractTrackingNumber(c));
+    const untagged = mine.filter(c => {
+      const t = extractTags(c);
+      return !t.includes(BILLABLE_TAG) && !t.includes(REPEAT_TAG);
+    });
     res.json({
       fetched: all.length,
-      matchedRevRiseNumbers: all.filter(c => extractTrackingNumber(c)).length,
+      matchedRevRiseNumbers: mine.length,
       distinctTags: [...new Set(all.flatMap(extractTags))],
+      untaggedDetail: untagged.map(c => ({
+        id: c.id,
+        called_at: c.called_at,
+        direction: c.direction,
+        dial_status: c.dial_status,
+        duration: c.duration,
+        is_new_caller: c.is_new_caller,
+        tags: extractTags(c),
+        tracking_number: c.tracking_number,
+      })),
       sampleKeys: sample ? Object.keys(sample) : [],
       sampleCall: sample,
     });
