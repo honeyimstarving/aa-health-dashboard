@@ -297,13 +297,14 @@
 
   <!-- CALL TRACKING SECTION -->
   <div class="section">
-    <div class="section-tag blue">Call Tracking (Ringba)</div>
+    <div class="section-tag blue">Call Tracking</div>
     <div class="error-banner" id="calls-error"></div>
+    <div class="error-banner" id="revrise-error"></div>
     <div class="cards-4" style="margin-bottom:14px;">
       <div class="stat-card blue">
         <div class="stat-label">Total Calls</div>
         <div class="stat-val blue" id="calls-total">--</div>
-        <div class="stat-sub">via Ringba</div>
+        <div class="stat-sub" id="calls-total-sub">Ringba + RevRise</div>
       </div>
       <div class="stat-card green">
         <div class="stat-label">Connected</div>
@@ -313,7 +314,7 @@
       <div class="stat-card yellow">
         <div class="stat-label">Avg Duration</div>
         <div class="stat-val yellow" id="calls-duration">--</div>
-        <div class="stat-sub">min:sec</div>
+        <div class="stat-sub">min:sec &middot; Ringba only</div>
       </div>
       <div class="stat-card purple">
         <div class="stat-label">Cost / Call</div>
@@ -330,46 +331,6 @@
         <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;text-align:right;">Cost / Connected</span>
       </div>
       <div id="calls-campaign-rows">
-        <div class="campaign-status-row"><span style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">Loading...</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- REVRISE (CTM) SECTION -->
-  <div class="section">
-    <div class="section-tag" style="color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-border);">RevRise — Call Tracking (CTM)</div>
-    <div class="error-banner" id="revrise-error"></div>
-    <div class="cards-4" style="margin-bottom:14px;">
-      <div class="stat-card" style="border-color:var(--accent-border);">
-        <div class="stat-label">Billable Calls</div>
-        <div class="stat-val" style="color:var(--accent);" id="rr-billable">--</div>
-        <div class="stat-sub">tagged "first time caller"</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="stat-label">Total Calls</div>
-        <div class="stat-val blue" id="rr-total">--</div>
-        <div class="stat-sub" id="rr-billable-rate">--% billable</div>
-      </div>
-      <div class="stat-card yellow">
-        <div class="stat-label">Repeat Callers</div>
-        <div class="stat-val yellow" id="rr-repeat">--</div>
-        <div class="stat-sub" id="rr-untagged">-- untagged</div>
-      </div>
-      <div class="stat-card green">
-        <div class="stat-label">Billed Spend</div>
-        <div class="stat-val green" id="rr-spend">$--</div>
-        <div class="stat-sub" id="rr-rate-sub">$-- per billable call</div>
-      </div>
-    </div>
-    <div class="deals-wrap">
-      <div class="campaign-status-row" style="border-bottom:1px solid var(--border);">
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:2;">Tracking Number</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;text-align:right;">Total Calls</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;text-align:right;">Billable</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;text-align:right;">Repeat</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;text-align:right;">Billed</span>
-      </div>
-      <div id="rr-number-rows">
         <div class="campaign-status-row"><span style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">Loading...</span></div>
       </div>
     </div>
@@ -574,6 +535,12 @@ function normCamp(name) {
   return name;
 }
 
+// Ringba and RevRise land at different times, so both fetches store their
+// results here and a single renderer composes the table. Without this the
+// slower fetch would overwrite the faster one's rows.
+let ringbaData = null;
+let revRiseData = null;
+
 async function fetchCallsData() {
   showError('calls-error', false);
   const { from, to } = getGlobalDates();
@@ -584,43 +551,73 @@ async function fetchCallsData() {
       body: JSON.stringify({ dateFrom: from, dateTo: to, targets: AA_TARGETS })
     });
     if (!res.ok) throw new Error(`Proxy ${res.status}`);
-    const data = await res.json();
-    const total     = data.totalCalls ?? null;
-    const connected = data.connectedCalls ?? null;
-    const avgSec    = data.avgDurationSec ?? null;
-    setEl('calls-total',     total !== null ? String(total) : '--');
-    setEl('calls-connected', connected !== null ? String(connected) : '--');
-    const rate = (total && connected) ? (connected/total*100).toFixed(1) : null;
-    setEl('calls-connect-rate', rate ? `${rate}% connect rate` : '--% connect rate');
-    if (avgSec !== null) setEl('calls-duration', fmtDur(avgSec));
-    const spendText = document.getElementById('ads-spend')?.textContent || '';
-    const spend = parseFloat(spendText.replace(/[$,k]/g,'')) * (spendText.includes('k')?1000:1);
-    if (!isNaN(spend) && total > 0) setEl('calls-cost-per', fmtFull$(spend/total));
-    // Per-campaign table
-    const rowsEl = document.getElementById('calls-campaign-rows');
-    if (data.campaigns && data.campaigns.length > 0) {
-      const campSpendMap = { 'Cobra New': 'camp-cn-spend', 'Cobra OG': 'camp-co-spend', 'Cobra PMAX': 'camp-cp-spend', 'Ruby': 'camp-rb-spend', 'Carrier': 'camp-ca-spend' };
-      rowsEl.innerHTML = data.campaigns.map(c => {
-        const connRate = c.totalCalls > 0 ? (c.connectedCalls/c.totalCalls*100).toFixed(1) : '0';
-        const canon = normCamp(c.campaign);
-        const campSpendEl = document.getElementById(campSpendMap[canon]);
-        const campSpend = campSpendEl ? parseFloat(campSpendEl.textContent.replace(/[$,]/g,'')) : NaN;
-        const costPerConn = (!isNaN(campSpend) && campSpend > 0 && c.connectedCalls > 0) ? fmtFull$(campSpend/c.connectedCalls) : '$--';
-        const color = CAMPAIGN_COLORS[canon] || 'var(--text)';
-        return `<div class="campaign-status-row">
-          <span style="font-family:var(--font-mono);font-size:11px;color:${color};font-weight:600;flex:2;">${c.campaign}</span>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);flex:1;text-align:right;">${c.totalCalls}</span>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);flex:1;text-align:right;">${c.connectedCalls}</span>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);flex:1;text-align:right;">${connRate}%</span>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--purple);flex:1;text-align:right;">${costPerConn}</span>
-        </div>`;
-      }).join('');
-    } else {
-      rowsEl.innerHTML = `<div class="campaign-status-row"><span style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">No per-campaign data available</span></div>`;
-    }
+    ringbaData = await res.json();
+    renderCallsTable();
   } catch(err) {
+    ringbaData = null;
     showError('calls-error', true, `Ringba error: ${err.message}`);
+    renderCallsTable();
   }
+}
+
+// Builds the call-tracking cards and the campaign table from both sources.
+// RevRise is one row like any other campaign: its "Converted" column is
+// billable (first-time-caller) calls, so Cost/Connected lands on the flat rate.
+function renderCallsTable() {
+  const rbTotal     = ringbaData?.totalCalls ?? 0;
+  const rbConnected = ringbaData?.connectedCalls ?? 0;
+  const rbAvgSec    = ringbaData?.avgDurationSec ?? null;
+
+  const rrTotal    = revRiseData?.totalCalls ?? 0;
+  const rrBillable = revRiseData?.billableCalls ?? 0;
+
+  const total     = rbTotal + rrTotal;
+  const connected = rbConnected + rrBillable;
+
+  setEl('calls-total',     total > 0 ? String(total) : '--');
+  setEl('calls-connected', total > 0 ? String(connected) : '--');
+  setEl('calls-total-sub', rrTotal > 0 ? `Ringba ${rbTotal} + RevRise ${rrTotal}` : 'Ringba + RevRise');
+  const rate = total > 0 ? (connected/total*100).toFixed(1) : null;
+  setEl('calls-connect-rate', rate ? `${rate}% connect rate` : '--% connect rate');
+  if (rbAvgSec !== null) setEl('calls-duration', fmtDur(rbAvgSec));
+
+  const rowsEl = document.getElementById('calls-campaign-rows');
+  if (!rowsEl) return;
+
+  const campSpendMap = { 'Cobra New': 'camp-cn-spend', 'Cobra OG': 'camp-co-spend', 'Cobra PMAX': 'camp-cp-spend', 'Ruby': 'camp-rb-spend', 'Carrier': 'camp-ca-spend' };
+  const rows = [];
+
+  (ringbaData?.campaigns || []).forEach(c => {
+    const connRate = c.totalCalls > 0 ? (c.connectedCalls/c.totalCalls*100).toFixed(1) : '0';
+    const canon = normCamp(c.campaign);
+    const campSpendEl = document.getElementById(campSpendMap[canon]);
+    const campSpend = campSpendEl ? parseFloat(campSpendEl.textContent.replace(/[$,]/g,'')) : NaN;
+    const costPerConn = (!isNaN(campSpend) && campSpend > 0 && c.connectedCalls > 0) ? fmtFull$(campSpend/c.connectedCalls) : '$--';
+    const color = CAMPAIGN_COLORS[canon] || 'var(--text)';
+    rows.push(`<div class="campaign-status-row">
+      <span style="font-family:var(--font-mono);font-size:11px;color:${color};font-weight:600;flex:2;">${c.campaign}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);flex:1;text-align:right;">${c.totalCalls}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);flex:1;text-align:right;">${c.connectedCalls}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);flex:1;text-align:right;">${connRate}%</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--purple);flex:1;text-align:right;">${costPerConn}</span>
+    </div>`);
+  });
+
+  if (revRiseData) {
+    const billRate = rrTotal > 0 ? (rrBillable/rrTotal*100).toFixed(1) : '0';
+    const costPer  = rrBillable > 0 ? fmtFull$(rawRevRiseSpend/rrBillable) : '$--';
+    rows.push(`<div class="campaign-status-row">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--accent);font-weight:600;flex:2;">RevRise</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);flex:1;text-align:right;">${rrTotal}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);flex:1;text-align:right;">${rrBillable}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);flex:1;text-align:right;">${billRate}%</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--purple);flex:1;text-align:right;">${costPer}</span>
+    </div>`);
+  }
+
+  rowsEl.innerHTML = rows.length
+    ? rows.join('')
+    : `<div class="campaign-status-row"><span style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">No per-campaign data available</span></div>`;
 }
 
 // ── REVRISE (CTM) ────────────────────────────
@@ -636,51 +633,27 @@ async function fetchRevRiseData() {
     if (!res.ok) throw new Error(`Proxy ${res.status}`);
     const data = await res.json();
 
+    revRiseData       = data;
     revRiseRate       = data.rate ?? 100;
     rawRevRiseSpend   = data.spend ?? 0;
     revRiseTotalCalls = data.totalCalls ?? 0;
 
-    const billable = data.billableCalls ?? 0;
-    const repeat   = data.repeatCalls ?? 0;
+    setEl('camp-rr-basis', `${data.billableCalls ?? 0} billable × ${fmtFull$(revRiseRate)}`);
+
+    // Untagged calls bill nothing. Surfaced quietly rather than as an error —
+    // a tagging rule that stops firing otherwise looks like a slow day.
     const untagged = data.untaggedCalls ?? 0;
-
-    setEl('rr-billable', String(billable));
-    setEl('rr-total',    String(revRiseTotalCalls));
-    setEl('rr-repeat',   String(repeat));
-    setEl('rr-untagged', `${untagged} untagged`);
-    setEl('rr-spend',    fmtFull$(rawRevRiseSpend));
-    setEl('rr-rate-sub', `${fmtFull$(revRiseRate)} per billable call`);
-    setEl('rr-billable-rate', revRiseTotalCalls > 0
-      ? `${(billable/revRiseTotalCalls*100).toFixed(1)}% billable`
-      : '--% billable');
-    setEl('camp-rr-basis', `${billable} billable × ${fmtFull$(revRiseRate)}`);
-
-    // Untagged calls are billed as nothing. Surface it rather than hide it —
-    // a tagging rule that stops firing looks identical to a slow day otherwise.
     if (untagged > 0) {
       showError('revrise-error', true,
-        `${untagged} RevRise call${untagged===1?'':'s'} carry neither "first time caller" nor "repeat caller" — not billed. Check the CTM auto-tag rule on account ${data.accountId}.`);
+        `${untagged} inbound RevRise call${untagged===1?'':'s'} untagged — not billed. Check the auto-tag rule on CTM account ${data.accountId}.`);
     }
-
-    const rowsEl = document.getElementById('rr-number-rows');
-    const byNum  = data.byNumber || {};
-    const keys   = Object.keys(REVRISE_NUMBERS);
-    rowsEl.innerHTML = keys.map(k => {
-      const n = byNum[k] || { total: 0, billable: 0, repeat: 0 };
-      return `<div class="campaign-status-row">
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--accent);font-weight:600;flex:2;">${REVRISE_NUMBERS[k]}</span>
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);flex:1;text-align:right;">${n.total}</span>
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);flex:1;text-align:right;">${n.billable}</span>
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--yellow);flex:1;text-align:right;">${n.repeat}</span>
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);flex:1;text-align:right;">${fmtFull$(n.billable * revRiseRate)}</span>
-      </div>`;
-    }).join('');
+    renderCallsTable();
   } catch(err) {
+    revRiseData = null;
     rawRevRiseSpend = 0;
     revRiseTotalCalls = 0;
     showError('revrise-error', true, `RevRise/CTM error: ${err.message}`);
-    const rowsEl = document.getElementById('rr-number-rows');
-    if (rowsEl) rowsEl.innerHTML = `<div class="campaign-status-row"><span style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">No RevRise data</span></div>`;
+    renderCallsTable();
   }
 }
 
@@ -861,11 +834,11 @@ function renderSpendTotals() {
   });
   window.rawCampSpend_rr = rawRevRiseSpend;
   setEl('camp-rr-spend', fmtFull$(rawRevRiseSpend));
-  // cost/call — denominator spans both call sources, since the numerator now does
-  const ringbaCalls = parseInt(document.getElementById('calls-total')?.textContent) || 0;
-  const allCalls = ringbaCalls + revRiseTotalCalls;
+  // cost/call — calls-total already spans Ringba + RevRise, as blended does
+  const allCalls = parseInt(document.getElementById('calls-total')?.textContent) || 0;
   if (allCalls > 0) setEl('calls-cost-per', fmtFull$(blended / allCalls));
-  // per-campaign cost/connected in calls table
+  // per-campaign cost/connected in calls table. RevRise is skipped here: it has
+  // no entry in campSpendMap, and its rate is already exact at $100/billable.
   const campSpendMap = { 'Cobra New': 'camp-cn-spend', 'Cobra OG': 'camp-co-spend', 'Cobra PMAX': 'camp-cp-spend', 'Ruby': 'camp-rb-spend', 'Carrier': 'camp-ca-spend' };
   document.querySelectorAll('#calls-campaign-rows .campaign-status-row').forEach(row => {
     const nameEl = row.querySelector('span:first-child');
